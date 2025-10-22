@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Indie Comments - Painel</title>
+    <script src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .password-field {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+        .password-field input {
+            width: 100%;
+            padding-right: 45px;
+            box-sizing: border-box;
+        }
+        .toggle-password {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 8px;
+            color: #666;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 30px;
+            min-height: 30px;
+        }
+        .toggle-password:hover {
+            color: #333;
+            background-color: rgba(0, 0, 0, 0.05);
+            border-radius: 3px;
+        }
+        .password-field input:focus + .toggle-password,
+        .password-field .toggle-password:focus {
+            outline: 2px solid #007bff;
+            outline-offset: -2px;
+        }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <!-- VIEW: Login -->
+        <section id="login-view">
+            <article>
+                <header><hgroup><h2>Entrar</h2><p>Bem-vindo de volta!</p></hgroup></header>
+                <form id="login-form"><input type="email" name="email" placeholder="Seu email" required><div class="password-field"><input type="password" name="password" placeholder="Sua senha" required id="login-password"><button type="button" class="toggle-password" data-target="login-form password" aria-label="Mostrar/ocultar senha">👁️</button></div><button type="submit">Entrar</button></form>
+                <footer><p>Não tem uma conta? <a href="#" onclick="showView('signup')">Cadastre-se</a></p></footer>
+            </article>
+        </section>
+        <!-- VIEW: Signup -->
+        <section id="signup-view" style="display: none;">
+            <article>
+                <header><hgroup><h2>Cadastrar</h2><p>Crie sua conta gratuita.</p></hgroup></header>
+                <form id="signup-form"><input type="text" name="name" placeholder="Seu nome" required><input type="email" name="email" placeholder="Seu email" required><div class="password-field"><input type="password" name="password" placeholder="Sua senha" required id="signup-password"><button type="button" class="toggle-password" data-target="signup-form password" aria-label="Mostrar/ocultar senha">👁️</button></div><div class="password-field"><input type="password" name="confirmPassword" placeholder="Confirme sua senha" required id="signup-confirm-password"><button type="button" class="toggle-password" data-target="signup-form confirmPassword" aria-label="Mostrar/ocultar senha">👁️</button></div><button type="submit">Criar Conta</button></form>
+                <footer><p>Já tem uma conta? <a href="#" onclick="showView('login')">Faça login</a></p></footer>
+            </article>
+        </section>
+        <!-- VIEW: Dashboard -->
+        <section id="dashboard-view" style="display: none;">
+            <header><nav><ul><li><strong><h1>Indie Comments</h1></strong></li></ul><ul><li id="plan-badge-container"></li><li><button id="logout-btn" class="secondary">Sair</button></li></ul></nav></header>
+            <div id="dashboard-content">
+                <h2>Olá, <span id="user-name"></span>!</h2>
+                <section id="sites-management"><h3>Seus Sites</h3><div id="site-list" class="grid"></div><button id="add-site-btn">➕ Adicionar Novo Site</button></section>
+                <article id="add-site-form" style="display: none;"><header><h3>Adicionar Novo Site</h3></header><form><input type="url" id="new-site-url" placeholder="https://meusite.com" required><input type="text" id="new-site-name" placeholder="Nome do Site" required><div class="grid"><button type="button" onclick="hideAddSiteForm()" class="secondary">Cancelar</button><button type="submit">Gerar Código</button></div></form></article>
+            </div>
+        </section>
+    </main>
+    <!-- Modal de Upgrade -->
+    <dialog id="upgrade-modal">
+        <article>
+            <header><button aria-label="Close" rel="prev" onclick="closeUpgradeModal()"></button><h3>🚀 Quer mais sites?</h3></header>
+            <p>O plano gratuito permite apenas <strong>1 site</strong>. Faça o upgrade para o plano <strong>Supporter</strong> por apenas <strong>$6/ano</strong> e desbloqueie:</p>
+            <ul><li>✅ Até <strong>3 sites</strong></li><li>✅ Badge "🌟 Supporter" no seu widget</li><li>✅ Suporte prioritário por email</li></ul>
+            <footer>
+                <a href="https://www.buymeacoffee.com/indiecomments" target="_blank" class="btn-upgrade">☕ Fazer Upgrade no Buy Me a Coffee</a>
+                <small>Após o pagamento, cole o código da transação abaixo para ativar.</small>
+                <form id="upgrade-form"><input type="text" id="payment-proof" placeholder="Código ou email da transação do BMC"><button type="submit">Ativar Upgrade</button></form>
+            </footer>
+        </article>
+    </dialog>
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

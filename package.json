@@ -1,0 +1,27 @@
+{
+  "name": "indie-comments",
+  "version": "0.3.0",
+  "description": "A self-hosted comment system for websites",
+  "main": "server.js",
+  "scripts": {
+    "start": "PORT=4130 node server.js",
+    "dev": "PORT=4130 nodemon server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "comments",
+    "disqus-alternative",
+    "self-hosted"
+  ],
+  "author": "Indie Comments",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "bcryptjs": "^2.4.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

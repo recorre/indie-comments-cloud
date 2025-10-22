@@ -1,0 +1,18 @@
+:root { --primary-color: #5d5fef; --background-color: #fafafa; }
+body { background-color: var(--background-color); }
+.badge { padding: 4px 12px; border-radius: 16px; font-size: 0.8rem; font-weight: bold; color: white; }
+.badge-free { background-color: #6c757d; }
+.badge-paid { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); animation: subtle-pulse 3s ease-in-out infinite; }
+@keyframes subtle-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+.site-card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 1.5rem; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; }
+.site-card:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
+.site-card h4 { margin-bottom: 0.5rem; color: var(--primary-color); }
+.site-card p { margin-bottom: 1rem; font-size: 0.9em; color: #555; }
+.code-snippet { background-color: #2d2d2d; color: #f1f1f1; padding: 1rem; border-radius: 4px; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; word-break: break-all; position: relative; }
+.copy-btn { position: absolute; top: 5px; right: 5px; background: var(--primary-color); color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer; font-size: 0.7em; }
+#upgrade-modal { padding: 0; border: none; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+#upgrade-modal::backdrop { background: rgba(0, 0, 0, 0.5); }
+#upgrade-modal article { max-width: 450px; }
+.btn-upgrade { display: block; width: 100%; padding: 10px; text-align: center; background: #ffdd00; color: #000; text-decoration: none; border-radius: 8px; font-weight: bold; margin-bottom: 1rem; transition: background-color 0.2s; }
+.btn-upgrade:hover { background: #ffcc00; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem; }
