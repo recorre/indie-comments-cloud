@@ -1,12 +1,19 @@
 // --- API REAL PARA NOCODEBACKEND ---
 // Using backend proxy to securely handle API keys
-const API_BASE_URL = window.location.origin + '/api/proxy';  // Configurable URL for deployment
+const API_BASE_URL = 'https://indie-comments-cloud-production.up.railway.app/api/proxy';  // Production Railway URL
 const INSTANCE_NAME = '41300_indie_comments_v2';  // Still needed for the backend proxy to forward
 
-// Import bcrypt for password hashing (temporary MVP solution)
-const bcrypt = window.bcrypt;
+// Classe de erro customizada para melhor tratamento
+class APIError extends Error {
+    constructor(message, code, details = null) {
+        super(message);
+        this.name = 'APIError';
+        this.code = code;
+        this.details = details;
+    }
+}
 
-// Função auxiliar para chamadas de API
+// Função auxiliar para chamadas de API com tratamento robusto de erros
 async function apiCall(endpoint, options = {}) {
     // Add the instance as a query parameter for the backend to use
     const separator = endpoint.includes('?') ? '&' : '?';
@@ -22,15 +29,46 @@ async function apiCall(endpoint, options = {}) {
 
     try {
         const response = await fetch(url, config);
+
         if (!response.ok) {
             const errorText = await response.text();
-            // Melhorando o log de erro para incluir a resposta da API
-            throw new Error(`Erro na API: ${errorText} (${response.status})`);
+
+            // Mapear códigos HTTP para erros específicos
+            if (response.status === 429) {
+                throw new APIError(
+                    'Muitas requisições. Aguarde 1 minuto.',
+                    'RATE_LIMIT',
+                    { status: response.status }
+                );
+            }
+
+            if (response.status === 401 || response.status === 403) {
+                throw new APIError(
+                    'Credenciais inválidas.',
+                    'AUTH_ERROR',
+                    { status: response.status }
+                );
+            }
+
+            throw new APIError(
+                `Erro na API: ${errorText}`,
+                'API_ERROR',
+                { status: response.status, body: errorText }
+            );
         }
+
         return await response.json();
     } catch (error) {
-        console.error('Indie Comments API Error:', error);
-        throw error;
+        if (error instanceof APIError) {
+            throw error;  // Re-throw erros customizados
+        }
+
+        // Erro de rede ou parsing
+        throw new APIError(
+            'Erro de conexão. Verifique sua internet.',
+            'NETWORK_ERROR',
+            { originalError: error.message }
+        );
     }
 }
 
@@ -41,19 +79,27 @@ function isValidEmail(email) {
 
 // --- FUNÇÕES DE AUTENTICAÇÃO COM SEGURANÇA ---
 
-// Login: Busca usuário por email e compara senha
+// Login: Usa rota específica de login com verificação bcrypt no backend
 async function login(email, password) {
     if (!isValidEmail(email)) {
         return { success: false, error: 'Email inválido.' };
     }
+
     try {
-        const usersRes = await apiCall(`/read/users?email=${encodeURIComponent(email)}&password_hash=${encodeURIComponent(password)}`, {
-            method: 'GET'
+        // Usar rota específica de login
+        const response = await fetch(`${API_BASE_URL}/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
         });
-        if (usersRes.data.length === 0) {
+
+        if (!response.ok) {
             return { success: false, error: 'Email ou senha incorretos.' };
         }
+
+        const usersRes = await response.json();
         const user = usersRes.data[0];
+
         return {
             success: true,
             user: {
@@ -64,11 +110,19 @@ async function login(email, password) {
             }
         };
     } catch (error) {
+        if (error.code === 'RATE_LIMIT') {
+            return { success: false, error: error.message };
+        }
+
+        if (error.code === 'NETWORK_ERROR') {
+            return { success: false, error: 'Sem conexão com a internet.' };
+        }
+
         return { success: false, error: 'Erro ao fazer login. Tente novamente.' };
     }
 }
 
-// Signup: Cria usuário com senha hasheada
+// Signup: Cria usuário com senha hasheada no backend
 async function signup(name, email, password) {
     if (!isValidEmail(email)) {
         return { success: false, error: 'Email inválido.' };
@@ -85,20 +139,14 @@ async function signup(name, email, password) {
             return { success: false, error: 'Este email já está em uso.' };
         }
 
-        // ⚠️ ATENÇÃO: Armazenando senha em texto plano para MVP
-        // TODO: Implementar hash seguro no backend quando tiver infraestrutura própria
-        // Por enquanto, usando a senha diretamente como hash para manter compatibilidade
-        console.log('Using plain text password for MVP compatibility');
-        const password_hash = password; // Armazena a senha em texto plano para compatibilidade com o login
-
-        // Criar usuário
-        console.log('Creating user with data:', { name, email, password_hash: password_hash.substring(0, 10) + '...' });
+        // Criar usuário - backend fará o hash da senha
+        console.log('Creating user with data:', { name, email, password_hash: '[HASHED]' });
         const createRes = await apiCall('/create/users', {
             method: 'POST',
             body: JSON.stringify({
                 name,
                 email,
-                password_hash
+                password_hash: password  // Backend fará hash
             })
         });
         console.log('User creation response:', createRes);

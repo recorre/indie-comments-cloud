@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     const CONTAINER_ID = 'indie-comments-container';
-    const API_BASE_URL = 'https://openapi.nocodebackend.com';
+    const API_BASE_URL = 'https://indie-comments-cloud-production.up.railway.app/api/proxy';  // Railway proxy for CORS
     const INSTANCE_NAME = '41300_indie_comments_v2';
 
     const widgetCSS = `
@@ -132,7 +132,30 @@
 
     // Cache para sites (reduz chamadas API)
     const SITE_CACHE = {};
-    const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+    const CACHE_DURATION = 30 * 60 * 1000; // 30 minutos
+
+    // Função para validar origem do domínio
+    async function validateOrigin(site) {
+        try {
+            const currentHostname = window.location.hostname;
+            const siteUrl = new URL(site.site_url);
+            const siteHostname = siteUrl.hostname;
+
+            // Permitir subdomínios
+            const isValidOrigin = currentHostname === siteHostname ||
+                                  currentHostname.endsWith('.' + siteHostname);
+
+            if (!isValidOrigin) {
+                console.warn(`Indie Comments: Domain mismatch. Expected ${siteHostname}, got ${currentHostname}`);
+                return false;
+            }
+
+            return true;
+        } catch (error) {
+            console.error('Indie Comments: Origin validation failed', error);
+            return false;
+        }
+    }
 
     async function getSiteByApiKey(apiKey) {
         // Verificar cache
@@ -141,8 +164,8 @@
             return SITE_CACHE[apiKey].data;
         }
 
-        // Buscar da API com paginação
-        const allSitesRes = await apiCall('/read/sites?limit=100&includeTotal=true');
+        // Buscar da API com paginação aumentada
+        const allSitesRes = await apiCall('/read/sites?limit=200&includeTotal=true');
         const site = allSitesRes.data.find(s => s.api_key === apiKey);
 
         if (site) {
@@ -204,6 +227,13 @@
             if (!site) {
                 throw new Error('Chave da API inválida.');
             }
+
+            // NOVA: Validar origem
+            const isValidOrigin = await validateOrigin(site);
+            if (!isValidOrigin) {
+                throw new Error('Domínio não autorizado para esta chave API.');
+            }
+
             // Buscar plano do usuário dono do site
             const userRes = await apiCall(`/read/users?id=${site.user_id}`);
             const userPlan = userRes.data[0]?.plan || 'free';
@@ -231,14 +261,23 @@
                 userMessage += ' Verifique se a chave da API está correta.';
             } else if (error.message.includes('network')) {
                 userMessage += ' Verifique sua conexão com a internet.';
+            } else if (error.message.includes('autorizado')) {
+                userMessage += ' Este domínio não está autorizado para usar esta chave API.';
             }
             container.innerHTML = `<div class="alert alert-error">${userMessage}</div>`;
         }
     }
 
+    // Função para sanitizar HTML (prevenir XSS)
+    function sanitizeHTML(text) {
+        const temp = document.createElement('div');
+        temp.textContent = text;  // textContent escapa HTML automaticamente
+        return temp.innerHTML;
+    }
+
     function renderWidget(container, comments, site) {
         const isSupporter = site.userPlan === 'paid';
-        const commentsHtml = comments.length > 0 ? comments.map(comment => `<li class="comment"><div class="comment-author">${comment.author_name}<span class="comment-timestamp">${new Date(comment.created_at).toLocaleDateString('pt-BR')}</span></div><div class="comment-message">${comment.message}</div></li>`).join('') : '<p>Seja o primeiro a comentar!</p>';
+        const commentsHtml = comments.length > 0 ? comments.map(comment => `<li class="comment"><div class="comment-author">${sanitizeHTML(comment.author_name)}<span class="comment-timestamp">${new Date(comment.created_at).toLocaleDateString('pt-BR')}</span></div><div class="comment-message">${sanitizeHTML(comment.message)}</div></li>`).join('') : '<p>Seja o primeiro a comentar!</p>';
         const supporterBadge = isSupporter ? '<span class="supporter-badge">🌟 Supporter</span>' : '';
         container.innerHTML = `<div class="indie-comments-widget"><h3>Comentários ${supporterBadge}</h3><ul class="comment-list">${commentsHtml}</ul><form id="comment-form" class="comment-form"><input type="text" name="name" placeholder="Seu nome" required><input type="email" name="email" placeholder="Seu email" required><textarea name="message" placeholder="Sua mensagem" required></textarea><button type="submit">Enviar Comentário</button></form></div>`;
         const form = document.getElementById('comment-form');

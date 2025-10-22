@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
+const bcrypt = require('bcryptjs');
 
 const app = express();
 const PORT = process.env.PORT || 4130;  // Changed from 3000 to 4130 since 3000 is in use
@@ -78,6 +79,81 @@ app.use('/api/proxy', async (req, res) => {
   } catch (error) {
     console.error('Proxy error:', error);
     res.status(500).json({ error: 'Proxy request failed' });
+  }
+});
+
+// Specific route for signup with bcrypt hashing
+app.post('/api/proxy/create/users', async (req, res) => {
+  try {
+    const { password_hash, ...userData } = req.body;
+
+    // Hash the password before sending to NoCodeBackend
+    const hashedPassword = await bcrypt.hash(password_hash, 10);
+
+    const targetUrl = `${NOCODEBACKEND_BASE_URL}/create/users`;
+    const headers = {
+      'Content-Type': 'application/json',
+      'Instance': INSTANCE_NAME,
+      'Authorization': `Bearer ${NOCODEBACKEND_API_KEY}`
+    };
+
+    const proxyResponse = await fetch(targetUrl, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify({
+        ...userData,
+        password_hash: hashedPassword
+      })
+    });
+
+    const responseData = await proxyResponse.json();
+    res.status(proxyResponse.status).json(responseData);
+  } catch (error) {
+    console.error('Signup error:', error);
+    res.status(500).json({ error: 'Signup failed' });
+  }
+});
+
+// Specific route for login with bcrypt verification
+app.post('/api/proxy/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Fetch user by email
+    const targetUrl = `${NOCODEBACKEND_BASE_URL}/read/users?email=${encodeURIComponent(email)}`;
+    const headers = {
+      'Content-Type': 'application/json',
+      'Instance': INSTANCE_NAME,
+      'Authorization': `Bearer ${NOCODEBACKEND_API_KEY}`
+    };
+
+    const proxyResponse = await fetch(targetUrl, {
+      method: 'GET',
+      headers: headers
+    });
+
+    const responseData = await proxyResponse.json();
+
+    if (responseData.data.length === 0) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    const user = responseData.data[0];
+
+    // Compare password with hash
+    const isValid = await bcrypt.compare(password, user.password_hash);
+
+    if (!isValid) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    // Return user without password
+    const { password_hash, ...userWithoutPassword } = user;
+    res.json({ status: 'success', data: [userWithoutPassword] });
+
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Login failed' });
   }
 });
 
