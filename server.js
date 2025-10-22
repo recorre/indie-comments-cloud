@@ -34,7 +34,7 @@ app.use('/api/proxy', async (req, res) => {
     // Prepare headers for the NoCodeBackend request
     const headers = {
       'Content-Type': 'application/json',
-      'Instance': INSTANCE_NAME,
+      'Instance': INSTANCE_NAME,  // CRITICAL: Instance must be in header for POST/PUT/DELETE
       'Authorization': `Bearer ${NOCODEBACKEND_API_KEY}`, // NoCodeBackend expects API key in Bearer format
       ...req.headers
     };
