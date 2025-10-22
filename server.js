@@ -85,7 +85,7 @@ app.use('/api/proxy', async (req, res) => {
 // Specific route for signup with bcrypt hashing
 app.post('/api/proxy/create/users', async (req, res) => {
   try {
-    const { password_hash, ...userData } = req.body;
+    const { name, email, password_hash } = req.body;
 
     // Hash the password before sending to NoCodeBackend
     const hashedPassword = await bcrypt.hash(password_hash, 10);
@@ -101,7 +101,8 @@ app.post('/api/proxy/create/users', async (req, res) => {
       method: 'POST',
       headers: headers,
       body: JSON.stringify({
-        ...userData,
+        name: name,
+        email: email,
         password_hash: hashedPassword
       })
     });
